@@ -53,37 +53,33 @@ class GeneralPDFFiller:
             # Generate output filename if not provided
             if not output_filename:
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                output_filename = f"filled_form_{timestamp}.pdf"
+                base_name = Path(pdf_template).stem
+                output_filename = f"{base_name}_filled_{timestamp}.pdf"
             
             # Save filled PDF
             output_path = self.output_dir / output_filename
             pdf_document.save(str(output_path))
             pdf_document.close()
             
-            logger.info(f"PDF filled successfully: {output_path}")
+            logger.info(f"PDF saved to: {output_path}")
             return str(output_path)
             
         except Exception as e:
-            logger.error(f"Error filling PDF: {str(e)}")
+            logger.error(f"Error filling PDF: {e}")
             raise
     
     def _process_form_data(self, form_data, mapping):
-        """Process form data to handle numeric field references"""
+        """Process form data, converting numeric references to field names"""
         processed = {}
-        fields = mapping.get('fields', {})
-        field_list = list(fields.keys())
+        field_number_map = mapping.get('field_numbers', {})
         
         for key, value in form_data.items():
-            # Check if key is a number (field reference)
-            if key.isdigit():
-                field_index = int(key) - 1  # Convert to 0-based index
-                if 0 <= field_index < len(field_list):
-                    field_name = field_list[field_index]
-                    processed[field_name] = value
-                else:
-                    logger.warning(f"Field number {key} out of range")
+            # If key is a number (as string), look up field name
+            if str(key).isdigit() and str(key) in field_number_map:
+                field_name = field_number_map[str(key)]
+                processed[field_name] = value
             else:
-                # Use key as is (field name)
+                # Use key directly as field name
                 processed[key] = value
         
         return processed
@@ -108,42 +104,51 @@ class GeneralPDFFiller:
                 self._highlight_box(page, box_info)
     
     def _add_text_to_field(self, page, field_info, text):
-        """Add text to a field with proper formatting"""
+        """Add text to a field with proper formatting using textbox for wrapping"""
         coords = field_info['coordinates']
-        # Use font size 8 as default for better text fitting
-        font_size = field_info.get('font_size', 8)
+        # Use smaller font size for better fitting
+        font_size = field_info.get('font_size', 7)  # Default to 7pt like symptoms fix
         
         x1, y1, x2, y2 = coords
         
-        # Calculate box dimensions
-        box_width = x2 - x1
-        box_height = y2 - y1
+        # Create rectangle with small padding
+        rect = fitz.Rect(
+            x1 + 2,  # Small left padding
+            y1 + 2,  # Small top padding
+            x2 - 2,  # Small right padding
+            y2 - 2   # Small bottom padding
+        )
         
-        # Use consistent padding and spacing like symptoms field
-        padding = 3
-        line_height = font_size + 1  # Tight line spacing
-        
-        # Wrap text to fit width
-        lines = self._wrap_text(text, box_width - (padding * 2), font_size)
-        
-        # Calculate how many lines we can actually fit
-        max_lines = int((box_height - (padding * 2)) / line_height)
-        
-        # Draw the lines that fit
-        y_pos = y1 + padding + font_size
-        for i, line in enumerate(lines[:max_lines]):
-            page.insert_text(
-                (x1 + padding, y_pos),
-                line,
-                fontsize=font_size,
-                color=(0, 0, 0),
-                fontname="helv"
+        try:
+            # Use PyMuPDF's insert_textbox for automatic text wrapping
+            # This prevents text from running off the page
+            rc = page.insert_textbox(
+                rect,
+                text,
+                fontsize=font_size,          # Smaller font size
+                fontname="helv",             # Helvetica font
+                color=(0, 0, 0),            # Black color
+                align=0,                     # Left align
+                expandtabs=0,                # No tab expansion
+                lineheight=0.9               # Tighter line spacing (90% of font size)
             )
-            y_pos += line_height
             
-        # Log if text was truncated
-        if len(lines) > max_lines:
-            logger.debug(f"Text truncated - {len(lines) - max_lines} lines omitted")
+            # Check if all text fit
+            if rc < 0:
+                logger.warning(f"Text overflow in field '{field_info.get('name', 'unknown')}': {-rc} characters didn't fit")
+            else:
+                logger.debug(f"Successfully inserted text in field '{field_info.get('name', 'unknown')}'")
+                
+        except Exception as e:
+            logger.error(f"Error inserting text: {e}")
+            # Fallback to simple text insertion if textbox fails
+            y_center = y1 + (y2 - y1) / 2 + font_size / 3
+            page.insert_text(
+                (x1 + 2, y_center),
+                text[:50] + "..." if len(text) > 50 else text,  # Truncate if too long
+                fontsize=font_size,
+                color=(0, 0, 0)
+            )
     
     def _highlight_box(self, page, box_info):
         """Highlight a condition box"""
@@ -157,42 +162,52 @@ class GeneralPDFFiller:
         page.draw_rect(rect, color=(1, 0.8, 0), fill=(1, 0.8, 0), opacity=0.3)
         
         # Optionally add border
-        page.draw_rect(rect, color=(1, 0.5, 0), width=1)
+        page.draw_rect(rect, color=(0.8, 0.6, 0), width=1)
     
     def _wrap_text(self, text, max_width, font_size):
-        """Wrap text to fit within specified width"""
-        # Better character width approximation for font size 8
-        # Use 0.4 multiplier for tighter text fitting
-        avg_char_width = font_size * 0.4
-        max_chars_per_line = int(max_width / avg_char_width)
-        
+        """Simple text wrapping (kept for backward compatibility but not used)"""
         words = text.split()
         lines = []
         current_line = []
-        current_length = 0
+        
+        # Approximate character width
+        char_width = font_size * 0.5
+        max_chars = int(max_width / char_width)
         
         for word in words:
-            word_length = len(word)
-            
-            # Check if adding this word exceeds the line limit
-            if current_length + word_length + len(current_line) > max_chars_per_line:
+            test_line = ' '.join(current_line + [word])
+            if len(test_line) <= max_chars:
+                current_line.append(word)
+            else:
                 if current_line:
                     lines.append(' '.join(current_line))
-                    current_line = [word]
-                    current_length = word_length
-                else:
-                    # Word is too long, split it
-                    while len(word) > max_chars_per_line:
-                        lines.append(word[:max_chars_per_line])
-                        word = word[max_chars_per_line:]
-                    if word:
-                        current_line = [word]
-                        current_length = len(word)
-            else:
-                current_line.append(word)
-                current_length += word_length
+                current_line = [word]
         
         if current_line:
             lines.append(' '.join(current_line))
         
         return lines
+
+# Example usage
+if __name__ == "__main__":
+    filler = GeneralPDFFiller()
+    
+    # Example form data
+    form_data = {
+        "name": "John Doe",
+        "date": "2024-01-15",
+        "description": "This is a long description that should wrap properly within the field boundaries without running off the page. The text will be automatically wrapped by PyMuPDF's textbox feature.",
+        "1": "Field referenced by number"
+    }
+    
+    conditions = [1, 3, "5c"]
+    
+    # Fill PDF
+    output_path = filler.fill_pdf(
+        pdf_template="template.pdf",
+        mapping_file="mapping.json",
+        form_data=form_data,
+        conditions_to_highlight=conditions
+    )
+    
+    print(f"Filled PDF saved to: {output_path}")
