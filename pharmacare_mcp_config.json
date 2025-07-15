@@ -6,7 +6,7 @@
     },
     "pharmacare-form": {
       "command": "C:\\Program Files\\Python312\\python.exe",
-      "args": ["-u", "C:\\mcp-servers\\pharmacare-form\\json_rpc_server.py"]
+      "args": ["-u", "C:\\mcp-servers\\pharmacare-form\\mcp_server_pharmacare.py"]
     }
   }
 }
