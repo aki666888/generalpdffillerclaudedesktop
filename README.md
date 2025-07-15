@@ -1,6 +1,6 @@
-# General Form Filler MCP
+# General PDF Form Filler for Claude Desktop
 
-A flexible PDF form filling system that works with Claude Desktop using OpenRPC and JSON-RPC.
+Universal PDF form filling system that works with any PDF using a target ID approach.
 
 ## Overview
 
@@ -39,16 +39,16 @@ generalformmcp/
 
 ### Prerequisites
 
-- Python 3.8 or higher
-- Node.js and npm (for OpenRPC)
+- Python 3.12
+- Node.js
 - Claude Desktop
 
-### 1. Install Python Dependencies
+### 1. Install Prerequisites
 
-```bash
-cd C:\generalformmcp
-pip install -r requirements.txt
-```
+- Python 3.12 or higher
+- Node.js (for OpenRPC)
+- Claude Desktop
+- PyMuPDF: `pip install PyMuPDF`
 
 ### 2. Configure Claude Desktop
 
