@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Logs
+logs/
+*.log
+
+# Output PDFs
+output/
+
+# Test files
+*.tmp
+*.temp
+test_*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Keep empty directories
+!logs/.gitkeep
+!output/.gitkeep
+!blanks_and_json/.gitkeep
