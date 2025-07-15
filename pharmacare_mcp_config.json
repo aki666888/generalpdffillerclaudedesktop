@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "chrome-mcp": {
+      "command": "node",
+      "args": ["C:\\Users\\YOUR_USERNAME\\AppData\\Roaming\\npm\\node_modules\\mcp-chrome-bridge\\dist\\mcp\\mcp-server-stdio.js"]
+    },
+    "pharmacare-form": {
+      "command": "C:\\Program Files\\Python312\\python.exe",
+      "args": ["-u", "C:\\mcp-servers\\pharmacare-form\\json_rpc_server.py"]
+    }
+  }
+}
