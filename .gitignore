@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Logs
+logs/
+*.log
+
+# Output files
+output/
+*.pdf
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local blanks and JSON files (keep directory structure)
+blanks_and_json/*
+!blanks_and_json/.gitkeep
+
+# Temporary files
+*.tmp
+*.temp
+~*

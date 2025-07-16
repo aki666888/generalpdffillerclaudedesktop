@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "openrpc": {
+      "command": "npx",
+      "args": ["-y", "@open-rpc/server-js"],
+      "env": {}
+    }
+  }
+}

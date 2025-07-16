@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "chrome-mcp": {
-      "command": "node",
-      "args": ["C:\\Users\\YOUR_USERNAME\\AppData\\Roaming\\npm\\node_modules\\mcp-chrome-bridge\\dist\\mcp\\mcp-server-stdio.js"]
-    }
-  }
-}
